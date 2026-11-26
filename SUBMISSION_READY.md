@@ -6,6 +6,7 @@
 - **Tagline**: Post-Quantum verifiable `tUSD8` invoice escrow with gasless EIP-3009 settlement on QDay Aevum Testnet (Chain 44005, Shanghai EVM).
 - **GitHub Repository**: `https://github.com/alphonshhhomenicmtu/aevum-pqc-escrow`
 - **Live Demo (GitHub Pages)**: `https://alphonshhhomenicmtu.github.io/aevum-pqc-escrow/`
+- **Architecture & Security Deck (PDF)**: `https://alphonshhhomenicmtu.github.io/aevum-pqc-escrow/aevum-pqc-deck.pdf` (`docs/aevum-pqc-deck.pdf`)
 - **Demo Video (YouTube, Public)**: `https://www.youtube.com/watch?v=nkpk0sRM6qs`
 - **Demo Video (Google Drive Mirror)**: `https://drive.google.com/file/d/1t5ARAbQjU2kRelXB5-MEDg-ze2rieTbt/view?usp=sharing`
 - **License**: Apache-2.0

@@ -3,6 +3,7 @@
 Post-Quantum verifiable stablecoin (`tUSD8`) escrow & EIP-3009 gasless settlement prototype targeting **QDay Aevum Testnet** (Chain ID `44005`, Shanghai EVM).
 
 - **Live Web Console**: https://alphonshhhomenicmtu.github.io/aevum-pqc-escrow/
+- **Architecture & Security Deck (PDF)**: https://alphonshhhomenicmtu.github.io/aevum-pqc-escrow/aevum-pqc-deck.pdf ([`docs/aevum-pqc-deck.pdf`](docs/aevum-pqc-deck.pdf))
 - **Demo Video (YouTube)**: https://www.youtube.com/watch?v=nkpk0sRM6qs
 - **Demo Video (Google Drive)**: https://drive.google.com/file/d/1t5ARAbQjU2kRelXB5-MEDg-ze2rieTbt/view?usp=sharing
 
