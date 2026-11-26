@@ -295,4 +295,72 @@ contract PqcInvoiceEscrowTest {
         vm.expectRevert(PqcInvoiceEscrow.NotMerchant.selector);
         escrow.release(invoiceId, keccak256("sig"));
     }
+
+    function test_RevertWhen_ZeroAmountOrZeroAddress() public {
+        bytes32 pubHash = keccak256("pk-zero");
+        vm.prank(payer);
+        vm.expectRevert(PqcInvoiceEscrow.ZeroAmount.selector);
+        escrow.fund(keccak256("inv-zero-amt"), merchant, 0, uint64(block.timestamp + 1 hours), pubHash);
+
+        vm.prank(payer);
+        vm.expectRevert(PqcInvoiceEscrow.ZeroAddress.selector);
+        escrow.fund(keccak256("inv-zero-addr"), address(0), 1_000_000, uint64(block.timestamp + 1 hours), pubHash);
+    }
+
+    function test_RevertWhen_ZeroSigDigest() public {
+        bytes32 pubHash = keccak256("pk-zerosig");
+        bytes32 invoiceId = keccak256("inv-zerosig");
+
+        vm.prank(payer);
+        tusd8.approve(address(escrow), 1_000_000);
+        vm.prank(payer);
+        escrow.fund(invoiceId, merchant, 1_000_000, uint64(block.timestamp + 1 hours), pubHash);
+
+        vm.prank(merchant);
+        vm.expectRevert(PqcInvoiceEscrow.ZeroCommitment.selector);
+        escrow.release(invoiceId, bytes32(0));
+    }
+
+    function test_RevertWhen_DoubleReleaseOrDoubleRefund() public {
+        bytes32 pubHash = keccak256("pk-double");
+        bytes32 invoiceId1 = keccak256("inv-double-rel");
+        bytes32 invoiceId2 = keccak256("inv-double-ref");
+        uint64 expiry = uint64(block.timestamp + 1 hours);
+
+        vm.prank(payer);
+        tusd8.approve(address(escrow), 2_000_000);
+        vm.prank(payer);
+        escrow.fund(invoiceId1, merchant, 1_000_000, expiry, pubHash);
+        vm.prank(payer);
+        escrow.fund(invoiceId2, merchant, 1_000_000, expiry, pubHash);
+
+        vm.prank(merchant);
+        escrow.release(invoiceId1, keccak256("sig-1"));
+        vm.prank(merchant);
+        vm.expectRevert(PqcInvoiceEscrow.InvalidStatus.selector);
+        escrow.release(invoiceId1, keccak256("sig-1"));
+
+        vm.warp(expiry + 1);
+        escrow.refundExpired(invoiceId2);
+        vm.expectRevert(PqcInvoiceEscrow.InvalidStatus.selector);
+        escrow.refundExpired(invoiceId2);
+    }
+
+    function test_RevertWhen_ReleaseAfterRefund() public {
+        bytes32 pubHash = keccak256("pk-rel-after-ref");
+        bytes32 invoiceId = keccak256("inv-rel-after-ref");
+        uint64 expiry = uint64(block.timestamp + 1 hours);
+
+        vm.prank(payer);
+        tusd8.approve(address(escrow), 1_000_000);
+        vm.prank(payer);
+        escrow.fund(invoiceId, merchant, 1_000_000, expiry, pubHash);
+
+        vm.warp(expiry + 1);
+        escrow.refundExpired(invoiceId);
+
+        vm.prank(merchant);
+        vm.expectRevert(PqcInvoiceEscrow.InvalidStatus.selector);
+        escrow.release(invoiceId, keccak256("late-sig"));
+    }
 }

@@ -9,6 +9,11 @@ via_ir = true
 optimizer = true
 optimizer_runs = 200
 
+[invariant]
+runs = 256
+depth = 32
+fail_on_revert = false
+
 [rpc_endpoints]
 aevum = "https://rpc-test.qday.info"
 local = "http://127.0.0.1:8545"

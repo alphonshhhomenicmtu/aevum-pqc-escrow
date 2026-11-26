@@ -14,9 +14,10 @@ Post-Quantum verifiable stablecoin (`tUSD8`) escrow & EIP-3009 gasless settlemen
 - `scripts/deploy_aevum.sh`: Turnkey QDay Chain `44005` Foundry deploy script (`PRIVATE_KEY` & `RPC_URL` via env vars, `--dry-run` verified).
 
 ## Verification
-- **Foundry (`evm_version = "shanghai"`)**: `8/8` tests passing (`forge test --offline -vv`)
-- **Python PQC Verifier**: `6/6` tests passing (`pytest -v`)
-- **Slither**: `0` High / `0` Medium findings
+- **Foundry (`evm_version = "shanghai"`)**: `13/13` tests passing (`forge test --offline -vv`: 12 unit tests + 1 stateful handler invariant suite with 256 runs / 8,192 calls proving escrow accounting conservation, no double-settlement, timelock enforcement, and tampered Lamport proof rejection)
+- **Python PQC Verifier**: `26/26` adversarial tests passing (`pytest -v`)
+- **Slither**: `0` High / `0` Medium findings (`--fail-medium` exit 0)
+- **Gitleaks**: `0` secrets detected
 
 ## Screenshots
 - [Overview](docs/screenshots/01-overview.png)
