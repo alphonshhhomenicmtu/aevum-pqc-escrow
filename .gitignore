@@ -5,6 +5,10 @@ __pycache__/
 contracts/out/
 contracts/cache/
 contracts/broadcast/
+demo-video/*.mp4
+demo-video/*.wav
+demo-video/*.aiff
+demo-video/qa_*.png
 .DS_Store
 *.env
 .env*
