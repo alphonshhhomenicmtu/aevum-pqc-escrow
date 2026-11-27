@@ -10,7 +10,7 @@ Post-Quantum verifiable stablecoin (`tUSD8`) escrow & EIP-3009 gasless settlemen
 ## Architecture
 - `contracts/src/PqcInvoiceEscrow.sol`: Shanghai-compatible `tUSD8` (`0x456569838f1d43009A91ebA4263147Afd7233483`) escrow supporting standard `fund`, gasless EIP-3009 `fundWithAuthorization`, on-chain 256-bit Lamport-SHA256 proof verification (`releaseWithLamportProof`), and `refundExpired`.
 - `pqc_verifier/`: Zero-dependency Python hash-based Post-Quantum One-Time Signature (Lamport-SHA256) keygen, signing, verification, and canonical invoice commitment builder.
-- `web/`: Interactive WebCrypto Lamport-SHA256 keygen/sign/verify console, EIP-3009 escrow simulator, and 4-Scenario Adversarial Quantum Breaker Lab.
+- `web/`: Local simulator. In-browser WebCrypto Lamport-SHA256 keygen is real. EIP-3009 fund, release, and refund buttons only simulate the state machine and do not broadcast `PqcInvoiceEscrow`. Includes the 4-scenario adversarial lab.
 - `scripts/deploy_aevum.sh`: Turnkey QDay Chain `44005` Foundry deploy script (`PRIVATE_KEY` & `RPC_URL` via env vars, `--dry-run` verified).
 
 ## Verification

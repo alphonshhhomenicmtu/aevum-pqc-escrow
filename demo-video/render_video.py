@@ -22,8 +22,8 @@ SCENES = [
     ),
     (
         SHOTS / "02-lamport-keygen-verify.png",
-        "2. Live Browser Lamport-SHA256 Keygen & Signature Verification",
-        "First, in our live Web Console, the browser generates a 256-bit Lamport-SHA256 one-time keypair using WebCrypto, "
+        "2. Local Simulator: Lamport-SHA256 Keygen (not a chain tx)",
+        "First, in the local web simulator, the browser generates a 256-bit Lamport-SHA256 one-time keypair using WebCrypto, "
         "hashes the public key into pqcPubKeyHash, and signs the canonical tUSD8 invoice commitment to produce pqcSigDigest.",
     ),
     (
@@ -42,9 +42,9 @@ SCENES = [
     ),
     (
         SHOTS / "01-overview.png",
-        "5. Verified: 8/8 Forge (Shanghai) | 6/6 Pytest | 0 Slither H/M",
-        "The entire stack is verified offline and on QDay RPC: eight of eight Foundry Shanghai tests pass, "
-        "six of six Python PQC tests pass, Slither reports zero high or medium findings, "
+        "5. Verified: 13/13 Forge (Shanghai) | 26/26 Pytest | 0 Slither H/M",
+        "The entire stack is verified offline and on QDay RPC: thirteen of thirteen Foundry Shanghai tests pass, "
+        "twenty-six of twenty-six Python PQC tests pass, Slither reports zero high or medium findings, "
         "and our turnkey Chain 44005 deploy dry-run succeeds cleanly.",
     ),
 ]

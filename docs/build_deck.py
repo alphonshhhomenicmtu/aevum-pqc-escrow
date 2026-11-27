@@ -260,14 +260,14 @@ def build_html() -> str:
   </div>
 </section>
 
-<!-- SLIDE 5: FORGE 8/8 SHANGHAI + SLITHER 0 H/M + CHAIN 44005 PROOF -->
+<!-- SLIDE 5: FORGE 13/13 SHANGHAI + PYTEST 26/26 + SLITHER 0 H/M + CHAIN 44005 PROOF -->
 <section class="slide">
   <div class="topbar">
     <span class="tag tag-emerald">05 · Verification &amp; Chain 44005 Proof</span>
     <span class="slide-num">05 / 06</span>
   </div>
   <div>
-    <h2>Foundry 8/8 (Shanghai) + Pytest 6/6 + Slither 0 H/M + QDay Dry-Run</h2>
+    <h2>Foundry 13/13 (Shanghai) + Pytest 26/26 + Slither 0 H/M + QDay Dry-Run</h2>
     <p class="subtitle">Verified offline with Foundry (`solc 0.8.28`, `evm_version = "shanghai"`), Python pytest, Slither, and live QDay Chain `44005` RPC.</p>
   </div>
   <div class="grid-2" style="margin-top:10px; align-items:stretch;">
@@ -279,8 +279,8 @@ def build_html() -> str:
       <div class="card card-emerald">
         <div class="card-title" style="color:#6ee7b7;">Test &amp; Static Analysis Proof</div>
         <ul class="clean emerald">
-          <li><strong>Foundry (<code>forge test --offline -vv</code>):</strong> <code>8/8</code> tests passing in <code>PqcInvoiceEscrow.t.sol</code> (Shanghai EVM).</li>
-          <li><strong>Python PQC Verifier (<code>pytest -v</code>):</strong> <code>6/6</code> tests passing in <code>tests/test_pqc_verifier.py</code>.</li>
+          <li><strong>Foundry (<code>forge test --offline -vv</code>):</strong> <code>13/13</code> tests passing (12 unit tests in <code>PqcInvoiceEscrow.t.sol</code> plus 1 invariant suite, Shanghai EVM).</li>
+          <li><strong>Python PQC Verifier (<code>pytest -v</code>):</strong> <code>26/26</code> tests passing in <code>tests/test_pqc_verifier.py</code>.</li>
           <li><strong>Slither Static Analysis:</strong> <code>0</code> High / <code>0</code> Medium issues on <code>PqcInvoiceEscrow.sol</code>.</li>
         </ul>
       </div>
