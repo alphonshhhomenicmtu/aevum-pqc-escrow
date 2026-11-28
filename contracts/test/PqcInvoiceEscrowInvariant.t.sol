@@ -87,7 +87,7 @@ contract PqcInvoiceEscrowHandler {
 
         _nonceCounter++;
         bytes32 invoiceId = keccak256(abi.encodePacked("eip3009", _nonceCounter, merchant));
-        bytes32 authNonce = escrow.authorizationNonce(invoiceId);
+        bytes32 authNonce = escrow.authorizationNonce(invoiceId, merchant, expiry, lamportPubKeyHash);
         uint256 validBefore = block.timestamp + 1 hours;
 
         bytes32 structHash = keccak256(
@@ -124,10 +124,10 @@ contract PqcInvoiceEscrowHandler {
         if (inv.status != PqcInvoiceEscrow.Status.Funded) return;
 
         if (usesLamportProof[invoiceId]) {
-            bytes32 msgDigest = sha256(abi.encodePacked("DELIVERED:", invoiceId));
+            bytes32 msgDigest = escrow.invoiceMessageDigest(invoiceId);
             bytes32[256] memory preimages = _signLamport(msgDigest);
             vm.prank(inv.merchant);
-            escrow.releaseWithLamportProof(invoiceId, msgDigest, preimages, _pk0, _pk1);
+            escrow.releaseWithLamportProof(invoiceId, preimages, _pk0, _pk1);
         } else {
             vm.prank(inv.merchant);
             escrow.release(invoiceId, keccak256(abi.encodePacked("sig", invoiceId)));
@@ -181,11 +181,11 @@ contract PqcInvoiceEscrowHandler {
 
             // 3. Tampered Lamport proof (1-bit flip) must revert
             if (usesLamportProof[invoiceId]) {
-                bytes32 msgDigest = sha256(abi.encodePacked("DELIVERED:", invoiceId));
+                bytes32 msgDigest = escrow.invoiceMessageDigest(invoiceId);
                 bytes32[256] memory badPreimages = _signLamport(msgDigest);
                 badPreimages[0] = bytes32(uint256(badPreimages[0]) ^ 1);
                 vm.prank(inv.merchant);
-                try escrow.releaseWithLamportProof(invoiceId, msgDigest, badPreimages, _pk0, _pk1) {
+                try escrow.releaseWithLamportProof(invoiceId, badPreimages, _pk0, _pk1) {
                     ghostViolations++;
                 } catch {}
             }

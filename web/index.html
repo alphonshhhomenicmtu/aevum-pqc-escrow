@@ -39,6 +39,22 @@
       <label>Merchant Address
         <input id="merchant" type="text" value="0x1111111111111111111111111111111111111111" />
       </label>
+      <div class="form-row">
+        <label>Payer Address
+          <input id="payer" type="text" value="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
+        </label>
+        <label>Escrow Address
+          <input id="escrow" type="text" value="0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" />
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Chain ID
+          <input id="chain-id" type="number" value="44005" min="1" />
+        </label>
+        <label>expiresAt (unix seconds)
+          <input id="expires-at" type="number" value="1893456000" min="0" />
+        </label>
+      </div>
       <div class="actions">
         <button id="btn-keygen" class="primary">Generate PQC Keypair &amp; Sign</button>
         <button id="btn-verify">Verify Signature</button>
@@ -48,7 +64,7 @@
 
     <section class="card">
       <h2>2. EIP-3009 Gasless Escrow Simulator</h2>
-      <p class="hint">Simulates <code>fundWithAuthorization</code> -> <code>releaseWithLamportProof</code> -> <code>refundExpired</code> state machine.</p>
+      <p class="hint">Local state machine only. The nonce and Lamport digest use the same ABI encoding as <code>PqcInvoiceEscrow</code>. Nothing here is broadcast.</p>
       <div class="actions">
         <button id="btn-fund-eip3009" class="primary">Simulate EIP-3009 Fund</button>
         <button id="btn-release-pqc">Simulate Lamport Release</button>

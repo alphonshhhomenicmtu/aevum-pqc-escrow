@@ -97,9 +97,12 @@ contract PqcInvoiceEscrow {
         bytes32 r,
         bytes32 s
     ) external {
+        // EIP-3009 signs only from/to/value/window/nonce. Bind the relayer-chosen
+        // terms into that nonce so merchant, expiry, and Lamport key cannot be swapped.
+        bytes32 nonce = authorizationNonce(invoiceId, merchant, expiresAt, pqcPubKeyHash);
         _createInvoice(invoiceId, from, merchant, amount, expiresAt, pqcPubKeyHash);
         IERC3009Minimal(address(token)).receiveWithAuthorization(
-            from, address(this), amount, validAfter, validBefore, authorizationNonce(invoiceId), v, r, s
+            from, address(this), amount, validAfter, validBefore, nonce, v, r, s
         );
     }
 
@@ -116,10 +119,9 @@ contract PqcInvoiceEscrow {
         if (!token.transfer(inv.merchant, inv.amount)) revert TransferFailed();
     }
 
-    /// @notice Release escrow with full on-chain Lamport-SHA256 one-time signature verification.
+    /// @notice Release escrow when the Lamport proof signs this invoice's on-chain commitment.
     function releaseWithLamportProof(
         bytes32 invoiceId,
-        bytes32 messageDigest,
         bytes32[256] calldata preimages,
         bytes32[256] calldata pk0,
         bytes32[256] calldata pk1
@@ -131,6 +133,7 @@ contract PqcInvoiceEscrow {
         bytes32 pubKeyHash = computeLamportPubKeyHash(pk0, pk1);
         if (pubKeyHash != inv.pqcPubKeyHash) revert InvalidLamportPubKeyHash();
 
+        bytes32 messageDigest = invoiceMessageDigest(invoiceId);
         bytes32 sigDigest = verifyLamportProof(messageDigest, preimages, pk0, pk1);
         inv.pqcSigDigest = sigDigest;
         inv.status = Status.Released;
@@ -191,8 +194,25 @@ contract PqcInvoiceEscrow {
         return sha256(sigBuf);
     }
 
-    function authorizationNonce(bytes32 invoiceId) public view returns (bytes32) {
-        return keccak256(abi.encode(address(this), invoiceId));
+    /// @notice EIP-3009 nonce bound to this escrow, the invoice, and the terms a relayer could otherwise substitute.
+    function authorizationNonce(
+        bytes32 invoiceId,
+        address merchant,
+        uint64 expiresAt,
+        bytes32 pqcPubKeyHash
+    ) public view returns (bytes32) {
+        return keccak256(abi.encode(address(this), invoiceId, merchant, expiresAt, pqcPubKeyHash));
+    }
+
+    /// @notice ABI encoding of the stored invoice. Lamport signatures must cover these exact bytes.
+    function invoiceCommitment(bytes32 invoiceId) public view returns (bytes memory) {
+        Invoice storage inv = _invoices[invoiceId];
+        return abi.encode(invoiceId, inv.amount, inv.payer, inv.merchant, block.chainid, address(this));
+    }
+
+    /// @notice sha256 of `invoiceCommitment`. This is the only digest `releaseWithLamportProof` accepts.
+    function invoiceMessageDigest(bytes32 invoiceId) public view returns (bytes32) {
+        return sha256(invoiceCommitment(invoiceId));
     }
 
     function getInvoice(bytes32 invoiceId) external view returns (Invoice memory) {

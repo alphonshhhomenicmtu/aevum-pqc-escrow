@@ -163,11 +163,11 @@ contract PqcInvoiceEscrowTest {
         vm.prank(payer);
         escrow.fund(invoiceId, merchant, 5_000_000, uint64(block.timestamp + 1 days), pubHash);
 
-        bytes32 msgDigest = sha256("DELIVERED:inv-001");
+        bytes32 msgDigest = escrow.invoiceMessageDigest(invoiceId);
         bytes32[256] memory preimages = _signLamport(msgDigest, sk0, sk1);
 
         vm.prank(merchant);
-        escrow.releaseWithLamportProof(invoiceId, msgDigest, preimages, pk0, pk1);
+        escrow.releaseWithLamportProof(invoiceId, preimages, pk0, pk1);
 
         assert(tusd8.balanceOf(merchant) == 5_000_000);
         assert(escrow.getInvoice(invoiceId).status == PqcInvoiceEscrow.Status.Released);
@@ -177,15 +177,17 @@ contract PqcInvoiceEscrowTest {
         (, , bytes32[256] memory pk0, bytes32[256] memory pk1) = _makeLamport(keccak256("seed-2"));
         bytes32 pubHash = escrow.computeLamportPubKeyHash(pk0, pk1);
         bytes32 invoiceId = keccak256("inv-gasless");
-        bytes32 nonce = escrow.authorizationNonce(invoiceId);
+        uint64 expiry = uint64(block.timestamp + 1 days);
+        uint256 validBefore = block.timestamp + 1 hours;
+        bytes32 nonce = escrow.authorizationNonce(invoiceId, merchant, expiry, pubHash);
 
         (uint8 v, bytes32 r, bytes32 s) = _signReceiveAuth(
-            PAYER_PK, address(escrow), 10_000_000, 0, block.timestamp + 1 hours, nonce
+            PAYER_PK, address(escrow), 10_000_000, 0, validBefore, nonce
         );
 
-        // Relayer submits without payer paying native tQDAY gas
+        // Relayer submits without payer paying native tQDAY gas. The nonce already binds merchant, expiry, and key.
         escrow.fundWithAuthorization(
-            invoiceId, payer, merchant, 10_000_000, uint64(block.timestamp + 1 days), pubHash, 0, block.timestamp + 1 hours, v, r, s
+            invoiceId, payer, merchant, 10_000_000, expiry, pubHash, 0, validBefore, v, r, s
         );
 
         assert(tusd8.balanceOf(address(escrow)) == 10_000_000);
@@ -196,20 +198,62 @@ contract PqcInvoiceEscrowTest {
         (, , bytes32[256] memory pk0, bytes32[256] memory pk1) = _makeLamport(keccak256("seed-3"));
         bytes32 pubHash = escrow.computeLamportPubKeyHash(pk0, pk1);
         bytes32 invoiceId = keccak256("inv-replay");
-        bytes32 nonce = escrow.authorizationNonce(invoiceId);
+        uint64 expiry = uint64(block.timestamp + 1 days);
+        uint256 validBefore = block.timestamp + 1 hours;
+        bytes32 nonce = escrow.authorizationNonce(invoiceId, merchant, expiry, pubHash);
 
         (uint8 v, bytes32 r, bytes32 s) = _signReceiveAuth(
-            PAYER_PK, address(escrow), 1_000_000, 0, block.timestamp + 1 hours, nonce
+            PAYER_PK, address(escrow), 1_000_000, 0, validBefore, nonce
         );
 
         escrow.fundWithAuthorization(
-            invoiceId, payer, merchant, 1_000_000, uint64(block.timestamp + 1 days), pubHash, 0, block.timestamp + 1 hours, v, r, s
+            invoiceId, payer, merchant, 1_000_000, expiry, pubHash, 0, validBefore, v, r, s
         );
 
         vm.expectRevert(PqcInvoiceEscrow.InvoiceAlreadyExists.selector);
         escrow.fundWithAuthorization(
-            invoiceId, payer, merchant, 1_000_000, uint64(block.timestamp + 1 days), pubHash, 0, block.timestamp + 1 hours, v, r, s
+            invoiceId, payer, merchant, 1_000_000, expiry, pubHash, 0, validBefore, v, r, s
         );
+    }
+
+    function test_RevertWhen_RelayerHijacksEIP3009Terms() public {
+        (, , bytes32[256] memory pk0, bytes32[256] memory pk1) = _makeLamport(keccak256("seed-hijack"));
+        bytes32 honestHash = escrow.computeLamportPubKeyHash(pk0, pk1);
+        bytes32 invoiceId = keccak256("inv-hijack");
+        uint64 honestExpiry = uint64(block.timestamp + 1 days);
+        uint256 validBefore = block.timestamp + 1 hours;
+        bytes32 nonce = escrow.authorizationNonce(invoiceId, merchant, honestExpiry, honestHash);
+
+        (uint8 v, bytes32 r, bytes32 s) =
+            _signReceiveAuth(PAYER_PK, address(escrow), 4_000_000, 0, validBefore, nonce);
+
+        address attackerMerchant = address(0xBAD);
+        uint64 swappedExpiry = uint64(block.timestamp + 30 days);
+        bytes32 swappedPk = keccak256("attacker-pk");
+
+        vm.expectRevert(MockTUSD8.InvalidSigner.selector);
+        escrow.fundWithAuthorization(
+            invoiceId, payer, attackerMerchant, 4_000_000, honestExpiry, honestHash, 0, validBefore, v, r, s
+        );
+
+        vm.expectRevert(MockTUSD8.InvalidSigner.selector);
+        escrow.fundWithAuthorization(
+            invoiceId, payer, merchant, 4_000_000, swappedExpiry, honestHash, 0, validBefore, v, r, s
+        );
+
+        vm.expectRevert(MockTUSD8.InvalidSigner.selector);
+        escrow.fundWithAuthorization(
+            invoiceId, payer, merchant, 4_000_000, honestExpiry, swappedPk, 0, validBefore, v, r, s
+        );
+
+        escrow.fundWithAuthorization(
+            invoiceId, payer, merchant, 4_000_000, honestExpiry, honestHash, 0, validBefore, v, r, s
+        );
+        PqcInvoiceEscrow.Invoice memory inv = escrow.getInvoice(invoiceId);
+        assert(inv.merchant == merchant);
+        assert(inv.expiresAt == honestExpiry);
+        assert(inv.pqcPubKeyHash == honestHash);
+        assert(tusd8.balanceOf(address(escrow)) == 4_000_000);
     }
 
     function test_RevertWhen_TamperedLamportPreimage() public {
@@ -223,13 +267,13 @@ contract PqcInvoiceEscrowTest {
         vm.prank(payer);
         escrow.fund(invoiceId, merchant, 2_000_000, uint64(block.timestamp + 1 days), pubHash);
 
-        bytes32 msgDigest = sha256("DELIVERED:inv-tamper");
+        bytes32 msgDigest = escrow.invoiceMessageDigest(invoiceId);
         bytes32[256] memory preimages = _signLamport(msgDigest, sk0, sk1);
         preimages[0] = bytes32(uint256(preimages[0]) ^ 1); // flip 1 bit
 
         vm.prank(merchant);
         vm.expectRevert(PqcInvoiceEscrow.InvalidLamportProof.selector);
-        escrow.releaseWithLamportProof(invoiceId, msgDigest, preimages, pk0, pk1);
+        escrow.releaseWithLamportProof(invoiceId, preimages, pk0, pk1);
     }
 
     function test_RevertWhen_WrongPubKeyHash() public {
@@ -242,12 +286,35 @@ contract PqcInvoiceEscrowTest {
         vm.prank(payer);
         escrow.fund(invoiceId, merchant, 2_000_000, uint64(block.timestamp + 1 days), keccak256("other-pk"));
 
-        bytes32 msgDigest = sha256("DELIVERED:inv-badpk");
+        bytes32 msgDigest = escrow.invoiceMessageDigest(invoiceId);
         bytes32[256] memory preimages = _signLamport(msgDigest, sk0, sk1);
 
         vm.prank(merchant);
         vm.expectRevert(PqcInvoiceEscrow.InvalidLamportPubKeyHash.selector);
-        escrow.releaseWithLamportProof(invoiceId, msgDigest, preimages, pk0, pk1);
+        escrow.releaseWithLamportProof(invoiceId, preimages, pk0, pk1);
+    }
+
+    function test_RevertWhen_LamportProofNotBoundToInvoice() public {
+        (bytes32[256] memory sk0, bytes32[256] memory sk1, bytes32[256] memory pk0, bytes32[256] memory pk1) =
+            _makeLamport(keccak256("seed-unbound"));
+        bytes32 pubHash = escrow.computeLamportPubKeyHash(pk0, pk1);
+        bytes32 invoiceId = keccak256("inv-unbound");
+
+        vm.prank(payer);
+        tusd8.approve(address(escrow), 2_000_000);
+        vm.prank(payer);
+        escrow.fund(invoiceId, merchant, 2_000_000, uint64(block.timestamp + 1 days), pubHash);
+
+        PqcInvoiceEscrow.Invoice memory inv = escrow.getInvoice(invoiceId);
+        bytes32 wrongDigest = sha256(
+            abi.encode(invoiceId, inv.amount + 1, inv.payer, inv.merchant, block.chainid, address(escrow))
+        );
+        bytes32[256] memory preimages = _signLamport(wrongDigest, sk0, sk1);
+
+        vm.prank(merchant);
+        vm.expectRevert(PqcInvoiceEscrow.InvalidLamportProof.selector);
+        escrow.releaseWithLamportProof(invoiceId, preimages, pk0, pk1);
+        assert(escrow.getInvoice(invoiceId).status == PqcInvoiceEscrow.Status.Funded);
     }
 
     function test_RefundExpired() public {

@@ -12,8 +12,8 @@
 - **License**: Apache-2.0
 
 ## Verification Summary
-- **Foundry (`forge test --offline -vv`, Shanghai EVM, `solc 0.8.28`)**: **13/13 passed** (`PqcInvoiceEscrow.t.sol` 12 unit tests + `PqcInvoiceEscrowInvariant.t.sol` stateful handler invariant suite: 256 runs / 8,192 calls, 0 reverts, 0 discards)
-- **Python PQC Verifier (`pytest -v`)**: **26/26 passed** (`tests/test_pqc_verifier.py` adversarial PQC suite)
+- **Foundry (`forge test --offline`, Shanghai EVM, `solc 0.8.28`)**: **15/15 passed** (`PqcInvoiceEscrow.t.sol` 14 unit tests + `PqcInvoiceEscrowInvariant.t.sol` stateful handler invariant suite: 256 runs / 8,192 calls, 0 reverts, 0 discards)
+- **Python PQC Verifier (`pytest -q`)**: **31/31 passed** (`tests/test_pqc_verifier.py` adversarial PQC suite)
 - **Slither Static Analysis**: **0 High / 0 Medium** issues on `PqcInvoiceEscrow.sol` (`--fail-medium` exit 0)
 - **Gitleaks Secret Scan**: **0** leaks found across repository
 - **QDay Chain `44005` RPC & Dry-Run Deploy**:
