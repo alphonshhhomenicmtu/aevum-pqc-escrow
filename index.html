@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aevum PQC Escrow — Post-Quantum tUSD8 Console</title>
+  <title>Aevum PQC Escrow — Local Simulator</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Cpath d='M32 10L50 20v14c0 11-7.5 18.8-18 22C21.5 52.8 14 45 14 34V20l18-10z' fill='none' stroke='%2338bdf8' stroke-width='4'/%3E%3Ccircle cx='32' cy='31' r='6' fill='%2322c55e'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -13,10 +13,11 @@
       <span class="dot"></span>
       <div>
         <h1>Aevum PQC Invoice Escrow</h1>
-        <p class="subtitle">QDay Aevum Testnet (Chain 44005 &middot; Shanghai EVM) &middot; tUSD8 EIP-3009 + Lamport-SHA256</p>
+        <p class="subtitle">Local simulator. Chain 44005 and tUSD8 are real. This page does not broadcast <code>PqcInvoiceEscrow</code>.</p>
       </div>
     </div>
     <div class="badges">
+      <span class="badge">Local simulator</span>
       <span class="badge">Chain ID: 44005</span>
       <span class="badge">tUSD8: 0x4565...3483</span>
       <span class="badge ok" id="crypto-status">WebCrypto SHA-256 Ready</span>
@@ -25,8 +26,8 @@
 
   <main class="grid">
     <section class="card">
-      <h2>1. Live Lamport-SHA256 Keygen &amp; Signer</h2>
-      <p class="hint">Generates a 256-bit Post-Quantum One-Time Signature keypair in-browser via WebCrypto SHA-256.</p>
+      <h2>1. In-Browser Lamport-SHA256 Keygen (WebCrypto, not a chain tx)</h2>
+      <p class="hint">Generates a 256-bit Post-Quantum One-Time Signature keypair in the browser via WebCrypto SHA-256. Nothing here is broadcast.</p>
       <div class="form-row">
         <label>Invoice ID
           <input id="invoice-id" type="text" value="inv-aevum-001" />
@@ -38,6 +39,22 @@
       <label>Merchant Address
         <input id="merchant" type="text" value="0x1111111111111111111111111111111111111111" />
       </label>
+      <div class="form-row">
+        <label>Payer Address
+          <input id="payer" type="text" value="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
+        </label>
+        <label>Escrow Address
+          <input id="escrow" type="text" value="0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" />
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Chain ID
+          <input id="chain-id" type="number" value="44005" min="1" />
+        </label>
+        <label>expiresAt (unix seconds)
+          <input id="expires-at" type="number" value="1893456000" min="0" />
+        </label>
+      </div>
       <div class="actions">
         <button id="btn-keygen" class="primary">Generate PQC Keypair &amp; Sign</button>
         <button id="btn-verify">Verify Signature</button>
@@ -47,10 +64,10 @@
 
     <section class="card">
       <h2>2. EIP-3009 Gasless Escrow Simulator</h2>
-      <p class="hint">Simulates <code>fundWithAuthorization</code> -> <code>releaseWithLamportProof</code> -> <code>refundExpired</code> state machine.</p>
+      <p class="hint">Local state machine only. The nonce and Lamport digest use the same ABI encoding as <code>PqcInvoiceEscrow</code>. Nothing here is broadcast.</p>
       <div class="actions">
         <button id="btn-fund-eip3009" class="primary">Simulate EIP-3009 Fund</button>
-        <button id="btn-release-pqc">Release w/ Lamport Proof</button>
+        <button id="btn-release-pqc">Simulate Lamport Release</button>
         <button id="btn-refund">Simulate Expiry Refund</button>
       </div>
       <div class="state-box" id="escrow-state">
