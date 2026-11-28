@@ -97,9 +97,9 @@ contract PqcInvoiceEscrow {
         bytes32 r,
         bytes32 s
     ) external {
-        // EIP-3009 signs only from/to/value/window/nonce. Bind the relayer-chosen
-        // terms into that nonce so merchant, expiry, and Lamport key cannot be swapped.
-        bytes32 nonce = authorizationNonce(invoiceId, merchant, expiresAt, pqcPubKeyHash);
+        // EIP-3009 signs only from/to/value/window/nonce. The nonce commits every
+        // relayer-supplied term so merchant, expiry, and the Lamport key cannot be swapped.
+        bytes32 nonce = authorizationNonce(invoiceId, from, merchant, amount, expiresAt, pqcPubKeyHash);
         _createInvoice(invoiceId, from, merchant, amount, expiresAt, pqcPubKeyHash);
         IERC3009Minimal(address(token)).receiveWithAuthorization(
             from, address(this), amount, validAfter, validBefore, nonce, v, r, s
@@ -194,14 +194,18 @@ contract PqcInvoiceEscrow {
         return sha256(sigBuf);
     }
 
-    /// @notice EIP-3009 nonce bound to this escrow, the invoice, and the terms a relayer could otherwise substitute.
+    /// @notice EIP-3009 nonce. Relayers cannot substitute payer, merchant, amount, expiry, or the Lamport key.
     function authorizationNonce(
         bytes32 invoiceId,
+        address payer,
         address merchant,
+        uint256 amount,
         uint64 expiresAt,
         bytes32 pqcPubKeyHash
     ) public view returns (bytes32) {
-        return keccak256(abi.encode(address(this), invoiceId, merchant, expiresAt, pqcPubKeyHash));
+        return keccak256(
+            abi.encode(block.chainid, address(this), invoiceId, payer, merchant, amount, expiresAt, pqcPubKeyHash)
+        );
     }
 
     /// @notice ABI encoding of the stored invoice. Lamport signatures must cover these exact bytes.

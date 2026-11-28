@@ -250,32 +250,54 @@ def test_signed_digest_is_sha256_of_abi_commitment():
     assert verify_signature(kp.pk0, kp.pk1, kp.pub_key_hash, payload, sig) is True
 
 
+def _nonce(invoice, merchant, expires_at, pk, **kwargs):
+    return authorization_nonce(
+        kwargs.get("escrow", ESCROW),
+        invoice,
+        payer=kwargs.get("payer", PAYER),
+        merchant=merchant,
+        amount=kwargs.get("amount", 5_000_000),
+        expires_at=expires_at,
+        pqc_pub_key_hash=pk,
+        chain_id=kwargs.get("chain_id", CHAIN_ID),
+    )
+
+
 def test_authorization_nonce_binds_relayer_fields():
     invoice = bytes.fromhex("22" * 32)
     pk = "0x" + "44" * 32
-    nonce = authorization_nonce(ESCROW, invoice, MERCHANT_A, 3600, pk)
-    swapped_merchant = authorization_nonce(ESCROW, invoice, MERCHANT_B, 3600, pk)
-    swapped_expiry = authorization_nonce(ESCROW, invoice, MERCHANT_A, 3601, pk)
-    swapped_pk = authorization_nonce(ESCROW, invoice, MERCHANT_A, 3600, "0x" + "55" * 32)
-    assert len({nonce, swapped_merchant, swapped_expiry, swapped_pk}) == 4
-    assert nonce == authorization_nonce(ESCROW, "0x" + invoice.hex(), MERCHANT_A.upper(), 3600, pk)
+    nonce = _nonce(invoice, MERCHANT_A, 3600, pk)
+    swapped_merchant = _nonce(invoice, MERCHANT_B, 3600, pk)
+    swapped_expiry = _nonce(invoice, MERCHANT_A, 3601, pk)
+    swapped_pk = _nonce(invoice, MERCHANT_A, 3600, "0x" + "55" * 32)
+    swapped_payer = _nonce(invoice, MERCHANT_A, 3600, pk, payer=MERCHANT_B)
+    swapped_amount = _nonce(invoice, MERCHANT_A, 3600, pk, amount=5_000_001)
+    swapped_chain = _nonce(invoice, MERCHANT_A, 3600, pk, chain_id=1)
+    assert len({nonce, swapped_merchant, swapped_expiry, swapped_pk, swapped_payer, swapped_amount, swapped_chain}) == 7
+    assert nonce == _nonce("0x" + invoice.hex(), MERCHANT_A.upper(), 3600, pk, payer=PAYER.upper())
 
 
 def test_abi_words_match_static_cast_vector():
-    # cast abi-encode "f(address,bytes32,address,uint64,bytes32)" of the fixed words below.
+    # abi.encode(uint256,address,bytes32,address,address,uint256,uint64,bytes32)
     encoded = (
-        bytes.fromhex("11" * 20).rjust(32, b"\x00")
+        (44005).to_bytes(32, "big")
+        + bytes.fromhex("11" * 20).rjust(32, b"\x00")
         + bytes.fromhex("22" * 32)
+        + bytes.fromhex("aa" * 20).rjust(32, b"\x00")
         + bytes.fromhex("33" * 20).rjust(32, b"\x00")
+        + (5_000_000).to_bytes(32, "big")
         + (3600).to_bytes(32, "big")
         + bytes.fromhex("44" * 32)
     )
     assert keccak256(encoded).hex() == authorization_nonce(
         "0x" + "11" * 20,
         bytes.fromhex("22" * 32),
-        "0x" + "33" * 20,
-        3600,
-        "0x" + "44" * 32,
+        payer="0x" + "aa" * 20,
+        merchant="0x" + "33" * 20,
+        amount=5_000_000,
+        expires_at=3600,
+        pqc_pub_key_hash="0x" + "44" * 32,
+        chain_id=44005,
     )[2:]
     commitment = build_invoice_commitment(
         bytes.fromhex("11" * 32),

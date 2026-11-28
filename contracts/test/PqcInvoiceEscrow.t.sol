@@ -179,7 +179,7 @@ contract PqcInvoiceEscrowTest {
         bytes32 invoiceId = keccak256("inv-gasless");
         uint64 expiry = uint64(block.timestamp + 1 days);
         uint256 validBefore = block.timestamp + 1 hours;
-        bytes32 nonce = escrow.authorizationNonce(invoiceId, merchant, expiry, pubHash);
+        bytes32 nonce = escrow.authorizationNonce(invoiceId, payer, merchant, 10_000_000, expiry, pubHash);
 
         (uint8 v, bytes32 r, bytes32 s) = _signReceiveAuth(
             PAYER_PK, address(escrow), 10_000_000, 0, validBefore, nonce
@@ -200,7 +200,7 @@ contract PqcInvoiceEscrowTest {
         bytes32 invoiceId = keccak256("inv-replay");
         uint64 expiry = uint64(block.timestamp + 1 days);
         uint256 validBefore = block.timestamp + 1 hours;
-        bytes32 nonce = escrow.authorizationNonce(invoiceId, merchant, expiry, pubHash);
+        bytes32 nonce = escrow.authorizationNonce(invoiceId, payer, merchant, 1_000_000, expiry, pubHash);
 
         (uint8 v, bytes32 r, bytes32 s) = _signReceiveAuth(
             PAYER_PK, address(escrow), 1_000_000, 0, validBefore, nonce
@@ -222,7 +222,15 @@ contract PqcInvoiceEscrowTest {
         bytes32 invoiceId = keccak256("inv-hijack");
         uint64 honestExpiry = uint64(block.timestamp + 1 days);
         uint256 validBefore = block.timestamp + 1 hours;
-        bytes32 nonce = escrow.authorizationNonce(invoiceId, merchant, honestExpiry, honestHash);
+        bytes32 nonce = escrow.authorizationNonce(invoiceId, payer, merchant, 4_000_000, honestExpiry, honestHash);
+        assert(
+            nonce
+                == keccak256(
+                    abi.encode(
+                        block.chainid, address(escrow), invoiceId, payer, merchant, uint256(4_000_000), honestExpiry, honestHash
+                    )
+                )
+        );
 
         (uint8 v, bytes32 r, bytes32 s) =
             _signReceiveAuth(PAYER_PK, address(escrow), 4_000_000, 0, validBefore, nonce);
@@ -244,6 +252,16 @@ contract PqcInvoiceEscrowTest {
         vm.expectRevert(MockTUSD8.InvalidSigner.selector);
         escrow.fundWithAuthorization(
             invoiceId, payer, merchant, 4_000_000, honestExpiry, swappedPk, 0, validBefore, v, r, s
+        );
+
+        vm.expectRevert(MockTUSD8.InvalidSigner.selector);
+        escrow.fundWithAuthorization(
+            invoiceId, address(0xB0B), merchant, 4_000_000, honestExpiry, honestHash, 0, validBefore, v, r, s
+        );
+
+        vm.expectRevert(MockTUSD8.InvalidSigner.selector);
+        escrow.fundWithAuthorization(
+            invoiceId, payer, merchant, 4_000_001, honestExpiry, honestHash, 0, validBefore, v, r, s
         );
 
         escrow.fundWithAuthorization(

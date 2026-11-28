@@ -87,7 +87,7 @@ contract PqcInvoiceEscrowHandler {
 
         _nonceCounter++;
         bytes32 invoiceId = keccak256(abi.encodePacked("eip3009", _nonceCounter, merchant));
-        bytes32 authNonce = escrow.authorizationNonce(invoiceId, merchant, expiry, lamportPubKeyHash);
+        bytes32 authNonce = escrow.authorizationNonce(invoiceId, eip3009Payer, merchant, amount, expiry, lamportPubKeyHash);
         uint256 validBefore = block.timestamp + 1 hours;
 
         bytes32 structHash = keccak256(

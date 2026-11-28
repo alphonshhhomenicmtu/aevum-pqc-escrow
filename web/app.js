@@ -175,9 +175,12 @@ export function encodeInvoiceCommitment(terms) {
 export function authorizationNonceBytes(terms) {
   return keccak256(
     concatBytes(
+      wordFromUint(terms.chainId),
       wordFromAddress(terms.escrow),
       invoiceIdWord(terms.invoiceId),
+      wordFromAddress(terms.payer),
       wordFromAddress(terms.merchant),
+      wordFromUint(terms.amount),
       wordFromUint(terms.expiresAt),
       hexToBytes(terms.pubKeyHash),
     ),

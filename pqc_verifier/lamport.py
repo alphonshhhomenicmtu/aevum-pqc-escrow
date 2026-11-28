@@ -263,17 +263,27 @@ def _require_uint(value: int, field: str) -> int:
 def authorization_nonce(
     escrow: str,
     invoice_id: str | bytes,
+    *,
+    payer: str,
     merchant: str,
+    amount: int,
     expires_at: int,
     pqc_pub_key_hash: str | bytes,
+    chain_id: int,
 ) -> str:
-    """keccak256(abi.encode(escrow, invoiceId, merchant, expiresAt, pqcPubKeyHash))."""
+    """keccak256(abi.encode(chainId, escrow, invoiceId, payer, merchant, amount, expiresAt, pqcPubKeyHash))."""
+    if isinstance(amount, bool) or not isinstance(amount, int) or amount <= 0:
+        raise ValueError("amount must be positive")
+    chain = _require_uint(chain_id, "chain_id")
     expires = _require_uint(expires_at, "expires_at")
     encoded = b"".join(
         (
+            _word_uint(chain),
             _word_address(escrow, "escrow"),
             invoice_id_to_bytes32(invoice_id),
+            _word_address(payer, "payer"),
             _word_address(merchant, "merchant"),
+            _word_uint(amount),
             _word_uint(expires),
             _parse_bytes32(pqc_pub_key_hash, "pqc_pub_key_hash"),
         )
